@@ -1,0 +1,14 @@
+{
+  "name": "doctor-appointment-system",
+  "version": "1.0.0",
+  "description": "Full-stack doctor appointment booking system with available slots",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "preview": "cd frontend && npm run preview"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
