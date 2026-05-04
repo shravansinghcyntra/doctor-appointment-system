@@ -14,12 +14,23 @@ function App() {
     notes: ''
   });
   const [editingId, setEditingId] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotError, setSlotError] = useState('');
 
   const API_BASE = '/api/appointments';
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  // Load slots when doctor or date changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadAvailableSlots();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [formData.doctorName, formData.date]);
 
   const fetchAppointments = async () => {
     try {
@@ -30,16 +41,57 @@ function App() {
     }
   };
 
+  const loadAvailableSlots = async () => {
+    if (!formData.doctorName || !formData.date) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    setLoadingSlots(true);
+    setSlotError('');
+    try {
+      const res = await axios.get(`${API_BASE}/available-slots`, {
+        params: {
+          doctorName: formData.doctorName,
+          date: formData.date.toISOString().split('T')[0]
+        }
+      });
+      setAvailableSlots(res.data);
+      if (formData.time && !res.data.includes(formData.time)) {
+        setSlotError('Selected time slot is no longer available');
+      } else {
+        setSlotError('');
+      }
+    } catch (err) {
+      console.error(err);
+      setAvailableSlots([]);
+      setSlotError('Error loading available slots');
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const newFormData = { ...formData, [e.target.name]: e.target.value };
+    setFormData(newFormData);
+    // Trigger slot reload on doctor or date change (but delay to avoid too many calls)
+    if (e.target.name === 'doctorName' || e.target.name === 'date') {
+      setTimeout(loadAvailableSlots, 300);
+    }
   };
 
   const handleDateChange = (date) => {
-    setFormData({ ...formData, date });
+    const newFormData = { ...formData, date };
+    setFormData(newFormData);
+    setTimeout(loadAvailableSlots, 300);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!editingId && availableSlots.length > 0 && !availableSlots.includes(formData.time)) {
+      setSlotError('Please select an available time slot');
+      return;
+    }
     try {
       if (editingId) {
         await axios.put(`${API_BASE}/update/${editingId}`, formData);
@@ -48,9 +100,13 @@ function App() {
         await axios.post(`${API_BASE}/create`, formData);
       }
       setFormData({ patientName: '', doctorName: '', date: new Date(), time: '', notes: '' });
+      setAvailableSlots([]);
       fetchAppointments();
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data?.message || err.message);
+      if (err.response?.status === 409) {
+        setSlotError(err.response.data.message);
+      }
     }
   };
 
@@ -96,17 +152,23 @@ function App() {
         <DatePicker
           selected={formData.date}
           onChange={handleDateChange}
-          showTimeSelect
-          dateFormat="Pp"
+          dateFormat="MMMM d, yyyy"
           required
         />
-        <input
+        <select
           name="time"
-          placeholder="Time (e.g., 10:00 AM)"
           value={formData.time}
           onChange={handleInputChange}
           required
-        />
+          disabled={loadingSlots || availableSlots.length === 0}
+        >
+          <option value="">Select available time</option>
+          {availableSlots.map(slot => (
+            <option key={slot} value={slot}>{slot}</option>
+          ))}
+        </select>
+        {loadingSlots && <p>Loading available slots...</p>}
+        {slotError && <p className="error">{slotError}</p>}
 
         <textarea
           name="notes"

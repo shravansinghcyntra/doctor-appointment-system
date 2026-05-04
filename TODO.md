@@ -1,13 +1,15 @@
-# Doctor Appointment System - COMPLETE ✅
+# Doctor Appointment System TODO
 
-## All Steps Done:
-- [x] Backend API with separate endpoints (/list, /create, /update/:id, /delete/:id)
-- [x] Frontend React app (forms, scheduling, CRUD)
-- [x] Status field removed
-- [x] UI text visibility fixed (light theme)
-- [x] Delete fixed (findByIdAndDelete)
-- [x] Dependencies, MongoDB connection, servers running
+## Available Slots Implementation - COMPLETE ✅
 
-**Live:** http://localhost:5173
+All features implemented:
+- [x] Backend `/available-slots` endpoint (Mon-Fri 9AM-5PM, excludes booked)
+- [x] Frontend dynamic slot dropdown + loading/error states
+- [x] Create validation prevents double-booking
+- [x] Edit/Delete unchanged (existing functionality preserved)
+- [x] README updated with docs/examples
 
-**Endpoints:** See README.md
+**Live**: http://localhost:5173
+
+Test: Book "Dr Smith" on 2024-10-07 → slot disappears from dropdown!
+
