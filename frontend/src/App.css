@@ -1,0 +1,80 @@
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+.form {
+  background: #f5f5f5;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  display: grid;
+  gap: 15px;
+}
+
+.form input, .form select, .form textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.form button {
+  background: #007bff;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form button:hover {
+  background: #0056b3;
+}
+
+.appointments {
+  display: grid;
+  gap: 20px;
+}
+
+.appointment-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  background: white;
+}
+
+
+
+.actions {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+}
+
+.actions button {
+  padding: 8px 16px;
+  font-size: 0.9em;
+}
+
+.actions button:first-child {
+  background: #28a745;
+}
+
+.actions button:first-child:hover {
+  background: #218838;
+}
+
+.actions button:last-child {
+  background: #dc3545;
+}
+
+.actions button:last-child:hover {
+  background: #c82333;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
