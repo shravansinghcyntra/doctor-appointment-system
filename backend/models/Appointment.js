@@ -5,7 +5,17 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  patientEmail: {
+    type: String
+  },
+  patientMobile: {
+    type: String
+  },
   doctorName: {
+    type: String,
+    required: true
+  },
+  doctorSpeciality: {
     type: String,
     required: true
   },
@@ -18,9 +28,33 @@ const appointmentSchema = new mongoose.Schema({
     required: true
   },
 
+  appointmentId: {
+    type: String,
+    unique: true,
+    index: true
+  },
+
   notes: {
     type: String
   }
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  versionKey: false,
+  toJSON: {
+    versionKey: false,
+    transform: (doc, ret) => {
+      delete ret.__v;
+      return ret;
+    }
+  },
+  toObject: {
+    versionKey: false,
+    transform: (doc, ret) => {
+      delete ret.__v;
+      return ret;
+    }
+  }
+});
 
 module.exports = mongoose.model('Appointment', appointmentSchema);
+

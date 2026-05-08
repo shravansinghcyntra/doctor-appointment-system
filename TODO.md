@@ -1,15 +1,16 @@
-# Doctor Appointment System TODO
+# TODO
 
-## Available Slots Implementation - COMPLETE ✅
+## Bugfix: edit/delete uses patientName (not unique)
+- [x] Backend: change PUT /update/:id and DELETE /delete/:id to use Mongo `_id` (or `appointmentId`) instead of `patientName`.
 
-All features implemented:
-- [x] Backend `/available-slots` endpoint (Mon-Fri 9AM-5PM, excludes booked)
-- [x] Frontend dynamic slot dropdown + loading/error states
-- [x] Create validation prevents double-booking
-- [x] Edit/Delete unchanged (existing functionality preserved)
-- [x] README updated with docs/examples
+- [ ] Frontend: change `editingId` to store `appt._id`, and pass `appt._id` to delete.
+- [ ] Frontend: update submit/update endpoint accordingly.
 
-**Live**: http://localhost:5173
+- [ ] Verify: create two appointments with same patientName, ensure only the intended one edits/deletes.
 
-Test: Book "Dr Smith" on 2024-10-07 → slot disappears from dropdown!
+
+
+
+## Follow-up (if still needed)
+- [ ] Fix timezone-safe date handling between frontend and backend for slot availability.
 

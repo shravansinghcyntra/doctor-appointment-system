@@ -6,17 +6,29 @@ import './App.css';
 
 function App() {
   const [appointments, setAppointments] = useState([]);
+  const doctors = ['Dr Smith', 'Dr Johnson', 'Dr Brown'];
+  const doctorSpecialityMap = {
+    'Dr Smith': 'Cardiologist',
+    'Dr Johnson': 'Dermatologist',
+    'Dr Brown': 'Orthopedic'
+  };
+
   const [formData, setFormData] = useState({
     patientName: '',
-    doctorName: '',
+    patientEmail: '',
+    patientMobile: '',
+    doctorName: doctors[0],
+    doctorSpeciality: doctorSpecialityMap[doctors[0]] || '',
     date: new Date(),
     time: '',
     notes: ''
   });
   const [editingId, setEditingId] = useState(null);
+
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotError, setSlotError] = useState('');
+  const [bookingMessage, setBookingMessage] = useState('');
 
   const API_BASE = '/api/appointments';
 
@@ -73,6 +85,12 @@ function App() {
 
   const handleInputChange = (e) => {
     const newFormData = { ...formData, [e.target.name]: e.target.value };
+
+    // If doctor changes, also set speciality
+    if (e.target.name === 'doctorName') {
+      newFormData.doctorSpeciality = doctorSpecialityMap[e.target.value] || '';
+    }
+
     setFormData(newFormData);
     // Trigger slot reload on doctor or date change (but delay to avoid too many calls)
     if (e.target.name === 'doctorName' || e.target.name === 'date') {
@@ -93,15 +111,31 @@ function App() {
       return;
     }
     try {
-      if (editingId) {
+      const resetForm = () => {
+        setFormData({
+          patientName: '',
+          patientEmail: '',
+          patientMobile: '',
+          doctorName: doctors[0],
+          doctorSpeciality: doctorSpecialityMap[doctors[0]] || '',
+          date: new Date(),
+          time: '',
+          notes: ''
+        });
+      };
+
+      if (!editingId) {
+        const response = await axios.post(`${API_BASE}/create`, formData);
+        setBookingMessage(`Appointment booked! Your appointment ID is ${response.data.appointmentId}`);
+        resetForm();
+      } else {
         await axios.put(`${API_BASE}/update/${editingId}`, formData);
         setEditingId(null);
-      } else {
-        await axios.post(`${API_BASE}/create`, formData);
       }
-      setFormData({ patientName: '', doctorName: '', date: new Date(), time: '', notes: '' });
+
       setAvailableSlots([]);
       fetchAppointments();
+      setTimeout(() => setBookingMessage(''), 6000);
     } catch (err) {
       console.error(err.response?.data?.message || err.message);
       if (err.response?.status === 409) {
@@ -113,13 +147,17 @@ function App() {
   const handleEdit = (appointment) => {
     setFormData({
       patientName: appointment.patientName,
+      patientEmail: appointment.patientEmail || '',
+      patientMobile: appointment.patientMobile || '',
       doctorName: appointment.doctorName,
+      doctorSpeciality: appointment.doctorSpeciality || doctorSpecialityMap[appointment.doctorName] || '',
       date: new Date(appointment.date),
       time: appointment.time,
-      notes: appointment.notes
+      notes: appointment.notes || ''
     });
     setEditingId(appointment._id);
   };
+
 
   const handleDelete = async (id) => {
     try {
@@ -143,18 +181,39 @@ function App() {
           required
         />
         <input
+          name="patientEmail"
+          placeholder="Patient Email"
+          value={formData.patientEmail}
+          onChange={handleInputChange}
+        />
+        <input
+          name="patientMobile"
+          placeholder="Patient Mobile"
+          value={formData.patientMobile}
+          onChange={handleInputChange}
+        />
+        <select
           name="doctorName"
-          placeholder="Doctor Name"
           value={formData.doctorName}
           onChange={handleInputChange}
           required
-        />
+        >
+          {doctors.map((doc) => (
+            <option key={doc} value={doc}>
+              {doc}
+            </option>
+          ))}
+        </select>
         <DatePicker
           selected={formData.date}
           onChange={handleDateChange}
           dateFormat="MMMM d, yyyy"
           required
         />
+        <p style={{ marginTop: '-5px' }}>
+          <b>Speciality:</b> {formData.doctorSpeciality}
+        </p>
+
         <select
           name="time"
           value={formData.time}
@@ -163,12 +222,15 @@ function App() {
           disabled={loadingSlots || availableSlots.length === 0}
         >
           <option value="">Select available time</option>
-          {availableSlots.map(slot => (
-            <option key={slot} value={slot}>{slot}</option>
+          {availableSlots.map((slot) => (
+            <option key={slot} value={slot}>
+              {slot}
+            </option>
           ))}
         </select>
         {loadingSlots && <p>Loading available slots...</p>}
         {slotError && <p className="error">{slotError}</p>}
+        {bookingMessage && <p style={{ color: '#16a34a', fontWeight: 600 }}>{bookingMessage}</p>}
 
         <textarea
           name="notes"
@@ -186,11 +248,14 @@ function App() {
             <h3>{appt.patientName} - {appt.doctorName}</h3>
             <p>Date: {new Date(appt.date).toLocaleString()}</p>
             <p>Time: {appt.time}</p>
+            {appt.patientEmail && <p>Email: {appt.patientEmail}</p>}
+            {appt.patientMobile && <p>Mobile: {appt.patientMobile}</p>}
 
             {appt.notes && <p>Notes: {appt.notes}</p>}
             <div className="actions">
               <button onClick={() => handleEdit(appt)}>Edit</button>
               <button onClick={() => handleDelete(appt._id)}>Delete</button>
+
             </div>
           </div>
         ))}
