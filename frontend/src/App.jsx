@@ -36,9 +36,11 @@ function App() {
     fetchAppointments();
   }, []);
 
-  // Load slots when doctor or date changes
+// Load slots when doctor or date changes
   useEffect(() => {
     const timer = setTimeout(() => {
+      // Debug: log the outgoing date format
+      // console.log('Loading available slots for', formData.doctorName, formData.date?.toISOString());
       loadAvailableSlots();
     }, 300);
     return () => clearTimeout(timer);
@@ -62,10 +64,11 @@ function App() {
     setLoadingSlots(true);
     setSlotError('');
     try {
+      const dateStr = formData.date.toISOString().split('T')[0];
       const res = await axios.get(`${API_BASE}/available-slots`, {
         params: {
           doctorName: formData.doctorName,
-          date: formData.date.toISOString().split('T')[0]
+          date: dateStr
         }
       });
       setAvailableSlots(res.data);
@@ -75,7 +78,7 @@ function App() {
         setSlotError('');
       }
     } catch (err) {
-      console.error(err);
+      console.error('available-slots fetch failed', err?.response?.status, err?.response?.data || err);
       setAvailableSlots([]);
       setSlotError('Error loading available slots');
     } finally {
@@ -129,7 +132,7 @@ function App() {
         setBookingMessage(`Appointment booked! Your appointment ID is ${response.data.appointmentId}`);
         resetForm();
       } else {
-        await axios.put(`${API_BASE}/update/${editingId}`, formData);
+await axios.put(`${API_BASE}/update/${editingId}`, formData);
         setEditingId(null);
       }
 
@@ -145,6 +148,7 @@ function App() {
   };
 
   const handleEdit = (appointment) => {
+    // editingId must be friendly appointmentId
     setFormData({
       patientName: appointment.patientName,
       patientEmail: appointment.patientEmail || '',
@@ -155,7 +159,7 @@ function App() {
       time: appointment.time,
       notes: appointment.notes || ''
     });
-    setEditingId(appointment._id);
+    setEditingId(appointment.appointmentId);
   };
 
 
@@ -245,7 +249,8 @@ function App() {
         <h2>Scheduled Appointments</h2>
         {appointments.map((appt) => (
           <div key={appt._id} className="appointment-card">
-            <h3>{appt.patientName} - {appt.doctorName}</h3>
+<h3>{appt.patientName} - {appt.doctorName}</h3>
+            <p>Appointment ID: {appt.appointmentId}</p>
             <p>Date: {new Date(appt.date).toLocaleString()}</p>
             <p>Time: {appt.time}</p>
             {appt.patientEmail && <p>Email: {appt.patientEmail}</p>}
@@ -254,7 +259,7 @@ function App() {
             {appt.notes && <p>Notes: {appt.notes}</p>}
             <div className="actions">
               <button onClick={() => handleEdit(appt)}>Edit</button>
-              <button onClick={() => handleDelete(appt._id)}>Delete</button>
+<button onClick={() => handleDelete(appt.appointmentId)}>Delete</button>
 
             </div>
           </div>

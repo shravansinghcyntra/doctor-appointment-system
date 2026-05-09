@@ -90,10 +90,10 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// PUT update appointment by Mongo _id
-router.put('/update/:id', async (req, res) => {
+// PUT update appointment by friendly appointmentId
+router.put('/update/:appointmentId', async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+const appointment = await Appointment.findOne({ appointmentId: req.params.appointmentId });
     if (!appointment) {
       return res.status(404).json({ message: 'Appointment not found' });
     }
@@ -122,35 +122,38 @@ router.put('/update/:id', async (req, res) => {
   }
 });
 
-// DELETE appointment by Mongo _id
-router.delete('/delete/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const appointment = await Appointment.findById(id);
-    if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
-    }
-
-    await Appointment.deleteOne({ _id: id });
-    res.json({ message: 'Appointment deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-
 // GET available slots for doctor/date
 router.get('/available-slots', async (req, res) => {
+  
+  // Accept both ISO date (yyyy-mm-dd) and full ISO datetime
+
+
   try {
     const { doctorName, date } = req.query;
     if (!doctorName || !date) {
       return res.status(400).json({ message: 'doctorName and date required' });
     }
 
-    const appointmentDate = new Date(date);
+    // IMPORTANT: `new Date('YYYY-MM-DD')` is parsed as UTC by JS.
+    // Frontend sends `dateStr = formData.date.toISOString().split('T')[0]` (YYYY-MM-DD),
+    // so parse as *local time* to keep weekday (Mon–Fri) correct.
+    const parseQueryDate = (value) => {
+      const isoDayMatch = /^\d{4}-\d{2}-\d{2}$/.test(value);
+      if (isoDayMatch) {
+        const [y, m, d] = value.split('-').map(Number);
+        return new Date(y, m - 1, d); // local midnight
+      }
+      return new Date(value);
+    };
+
+    const appointmentDate = parseQueryDate(date);
+    if (Number.isNaN(appointmentDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
     
     // Skip weekends
     const dayOfWeek = appointmentDate.getDay();
+
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       return res.json([]); // No slots on weekends
     }
@@ -181,6 +184,36 @@ router.get('/available-slots', async (req, res) => {
     const availableSlots = slots.filter(slot => !bookedTimes.includes(slot));
 
     res.json(availableSlots);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET appointment by friendly appointmentId
+router.get('/:appointmentId', async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const appointment = await Appointment.findOne({ appointmentId });
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+    return res.json(appointment);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE appointment by friendly appointmentId
+router.delete('/delete/:appointmentId', async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const appointment = await Appointment.findOne({ appointmentId });
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    await Appointment.deleteOne({ appointmentId });
+    res.json({ message: 'Appointment deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
